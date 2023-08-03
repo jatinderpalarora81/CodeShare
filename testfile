@@ -2,11 +2,11 @@ import cx_Oracle
 import csv
 import sys
 
-def connect_and_query(db_host, db_port, db_service, db_schema, db_password):
+def connect_and_query(username, password, db_host, db_port, service_name):
     try:
         # Create a connection to the Oracle database
-        dsn_tns = cx_Oracle.makedsn(db_host, db_port, service_name=db_service)
-        connection = cx_Oracle.connect(user=db_schema, password=db_password, dsn=dsn_tns)
+        dsn_tns = cx_Oracle.makedsn(db_host, db_port, service_name=service_name)
+        connection = cx_Oracle.connect(user=username, password=password, dsn=dsn_tns)
 
         # Create a cursor to execute SQL queries
         cursor = connection.cursor()
@@ -48,15 +48,15 @@ def write_to_csv(file_name, rows):
 
 if __name__ == "__main__":
     if len(sys.argv) != 6:
-        print("Usage: python script_name.py dbHostName dbPort dbService dbSchema dbPassword")
+        print("Usage: python script_name.py username password db-host db-port service_name")
     else:
-        db_host = sys.argv[1]
-        db_port = sys.argv[2]
-        db_service = sys.argv[3]
-        db_schema = sys.argv[4]
-        db_password = sys.argv[5]
+        username = sys.argv[1]
+        password = sys.argv[2]
+        db_host = sys.argv[3]
+        db_port = sys.argv[4]
+        service_name = sys.argv[5]
 
-        result_rows = connect_and_query(db_host, db_port, db_service, db_schema, db_password)
+        result_rows = connect_and_query(username, password, db_host, db_port, service_name)
 
         if result_rows:
             output_csv_file = "employee_data.csv"
