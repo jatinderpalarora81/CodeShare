@@ -1,4 +1,5 @@
 import cx_Oracle
+import csv
 import sys
 
 def connect_and_query(db_host, db_port, db_service, db_schema, db_password):
@@ -14,17 +15,36 @@ def connect_and_query(db_host, db_port, db_service, db_schema, db_password):
         query = "SELECT * FROM employee"
         cursor.execute(query)
 
-        # Fetch and print the results
+        # Fetch all the rows returned by the query
         rows = cursor.fetchall()
-        for row in rows:
-            print(row)
 
         # Close the cursor and connection
         cursor.close()
         connection.close()
 
+        return rows
+
     except cx_Oracle.DatabaseError as e:
         print("Error connecting to Oracle database:", e)
+        return None
+
+def write_to_csv(file_name, rows):
+    if rows is None:
+        return
+
+    try:
+        with open(file_name, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            # Write the header
+            writer.writerow(["Employee ID", "Employee Name", "Salary", "Department"])
+
+            # Write each row to the CSV file
+            for row in rows:
+                writer.writerow(row)
+
+        print(f"Data written to '{file_name}' successfully.")
+    except IOError as e:
+        print("Error writing to CSV:", e)
 
 if __name__ == "__main__":
     if len(sys.argv) != 6:
@@ -36,4 +56,8 @@ if __name__ == "__main__":
         db_schema = sys.argv[4]
         db_password = sys.argv[5]
 
-        connect_and_query(db_host, db_port, db_service, db_schema, db_password)
+        result_rows = connect_and_query(db_host, db_port, db_service, db_schema, db_password)
+
+        if result_rows:
+            output_csv_file = "employee_data.csv"
+            write_to_csv(output_csv_file, result_rows)
