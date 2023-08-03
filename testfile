@@ -1,1 +1,39 @@
-test
+import cx_Oracle
+import sys
+
+def connect_and_query(db_host, db_port, db_service, db_schema, db_password):
+    try:
+        # Create a connection to the Oracle database
+        dsn_tns = cx_Oracle.makedsn(db_host, db_port, service_name=db_service)
+        connection = cx_Oracle.connect(user=db_schema, password=db_password, dsn=dsn_tns)
+
+        # Create a cursor to execute SQL queries
+        cursor = connection.cursor()
+
+        # Execute the SELECT query
+        query = "SELECT * FROM employee"
+        cursor.execute(query)
+
+        # Fetch and print the results
+        rows = cursor.fetchall()
+        for row in rows:
+            print(row)
+
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+    except cx_Oracle.DatabaseError as e:
+        print("Error connecting to Oracle database:", e)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 6:
+        print("Usage: python script_name.py dbHostName dbPort dbService dbSchema dbPassword")
+    else:
+        db_host = sys.argv[1]
+        db_port = sys.argv[2]
+        db_service = sys.argv[3]
+        db_schema = sys.argv[4]
+        db_password = sys.argv[5]
+
+        connect_and_query(db_host, db_port, db_service, db_schema, db_password)
