@@ -113,3 +113,14 @@ if compare_and_update_hash(data, hash_file):
 else:
     print("Hash code unchanged.")
 
+
+Copy code
+import json
+import hashlib
+
+def calculate_hash(json_data):
+    """Calculate the hash code for a JSON object."""
+    json_str = json.dumps(json_data, sort_keys=True)
+    hash_object = hashlib.sha256(json_str.encode())
+    hash_code = hash_object.hexdigest()
+    return hash_code
