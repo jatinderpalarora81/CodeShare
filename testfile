@@ -131,3 +131,14 @@ def calculate_file_hash(file_path):
             hash_object.update(data)
 
     return hash_object.hexdigest()
+
+def delete_json_file(file_path):
+    """Delete a JSON file at the given path."""
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            print(f"{file_path} deleted successfully.")
+        except Exception as e:
+            print(f"Error deleting {file_path}: {e}")
+    else:
+        print(f"{file_path} does not exist.")
