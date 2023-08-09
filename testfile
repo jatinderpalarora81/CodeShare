@@ -61,3 +61,55 @@ if __name__ == "__main__":
         if result_rows:
             output_csv_file = "employee_data.csv"
             write_to_csv(output_csv_file, result_rows)
+
+
+
+import json
+
+def calculate_hash(data):
+    """Calculate a hash code using the built-in hash() function."""
+    data_str = json.dumps(data, sort_keys=True)
+    hash_code = hash(data_str)
+    return hash_code
+
+def save_hash_to_file(hash_code, filename):
+    """Save the hash code to a text file."""
+    with open(filename, 'w') as file:
+        file.write(str(hash_code))
+
+def read_hash_from_file(filename):
+    """Read the hash code from a text file."""
+    try:
+        with open(filename, 'r') as file:
+            return int(file.read().strip())
+    except FileNotFoundError:
+        return None
+
+def compare_and_update_hash(data, filename):
+    """Compare the hash code of the data with the one stored in the file.
+    If different, update the hash code in the file and return True.
+    Otherwise, return False.
+    """
+    current_hash = calculate_hash(data)
+    stored_hash = read_hash_from_file(filename)
+    
+    if stored_hash is None or current_hash != stored_hash:
+        save_hash_to_file(current_hash, filename)
+        return True
+    else:
+        return False
+
+# Example usage
+data = {"key1": "value1", "key2": "value2"}
+json_file = "data.json"
+hash_file = "hash.txt"
+
+# Calculate and store hash code in a text file
+save_hash_to_file(calculate_hash(data), hash_file)
+
+# Compare and update hash code if necessary
+if compare_and_update_hash(data, hash_file):
+    print("Hash code updated.")
+else:
+    print("Hash code unchanged.")
+
