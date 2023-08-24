@@ -56,3 +56,21 @@ node {
         // sh "deactivate"  // For Linux/Mac
     }
 }
+
+
+#!/usr/bin/env groovy
+
+def pythonExecutable = 'path/to/python'  // Replace with the path to your Python executable
+def virtualEnvPath = 'path/to/virtualenv'  // Replace with the path to your virtual environment
+def pythonScriptPath = 'path/to/your_script.py'  // Replace with the path to your Python script
+
+def runCommand(command) {
+    def process = command.execute()
+    process.waitFor()
+    println "Exit value: ${process.exitValue()}"
+    println "Output:\n${process.text}"
+}
+
+runCommand("source ${virtualEnvPath}/bin/activate")
+runCommand("${pythonExecutable} ${pythonScriptPath}")
+runCommand("deactivate")
