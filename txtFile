@@ -1,2 +1,33 @@
+pipeline {
+    agent any
 
-Option 1	Option 2	Option 3
+    environment {
+        PYTHON_HOME = '/path/to/python'  // Path to your Python installation
+    }
+
+    stages {
+        stage('Set Up Python Environment') {
+            steps {
+                script {
+                    // Create and activate a virtual environment
+                    sh "${PYTHON_HOME}/bin/python -m venv venv"
+                    sh "source venv/bin/activate"
+                }
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh "pip install -r requirements.txt"
+                }
+            }
+        }
+        stage('Run Python Script') {
+            steps {
+                script {
+                    sh "python your_script.py"
+                }
+            }
+        }
+    }
+}
