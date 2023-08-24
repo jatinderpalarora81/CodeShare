@@ -93,3 +93,18 @@ runCommand("source ${virtualEnvName}/bin/activate && python ${pythonScriptPath} 
 
 // Optionally, you can delete the virtual environment after the script has finished
 runCommand("rm -rf ${virtualEnvName}")
+
+
+#!/usr/bin/env groovy
+
+def virtualEnvName = 'myenv'
+def pythonExecutable = '/usr/local/bin/python3'  // Modify this with the correct path to your Python executable
+def pythonScriptPath = '/path/to/your_script.py'  // Replace with the path to your Python script
+
+def processBuilder = new ProcessBuilder('/bin/bash', '-c', """
+    $pythonExecutable -m venv $virtualEnvName
+    source $virtualEnvName/bin/activate
+    python $pythonScriptPath
+    deactivate
+""")
+processBuilder.inheritIO().start().waitFor()
