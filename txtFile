@@ -74,3 +74,22 @@ def runCommand(command) {
 runCommand("source ${virtualEnvPath}/bin/activate")
 runCommand("${pythonExecutable} ${pythonScriptPath}")
 runCommand("deactivate")
+
+
+
+def virtualEnvName = 'myenv'  // Name of the virtual environment
+def pythonExecutable = '/path/to/python'  // Replace with the path to your Python executable
+def pythonScriptPath = '/path/to/your_script.py'  // Replace with the path to your Python script
+
+def runCommand(command) {
+    def process = command.execute()
+    process.waitFor()
+    println "Exit value: ${process.exitValue()}"
+    println "Output:\n${process.text}"
+}
+
+runCommand("${pythonExecutable} -m venv ${virtualEnvName}")  // Create virtual environment
+runCommand("source ${virtualEnvName}/bin/activate && python ${pythonScriptPath} && deactivate")  // Run Python script
+
+// Optionally, you can delete the virtual environment after the script has finished
+runCommand("rm -rf ${virtualEnvName}")
