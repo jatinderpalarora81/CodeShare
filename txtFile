@@ -31,3 +31,28 @@ pipeline {
         }
     }
 }
+
+
+def pythonExecutable = 'path/to/python'  // Replace with the path to your Python executable
+def virtualEnvPath = 'path/to/virtualenv'  // Replace with the path to your virtual environment
+def pythonScriptPath = 'path/to/your_script.py'  // Replace with the path to your Python script
+
+node {
+    stage('Set Up Python Environment') {
+        // Activate the virtual environment
+        bat "${virtualEnvPath}/Scripts/activate"  // For Windows
+        // sh "source ${virtualEnvPath}/bin/activate"  // For Linux/Mac
+    }
+    
+    stage('Run Python Script') {
+        // Run the Python script within the virtual environment
+        bat "${pythonExecutable} ${pythonScriptPath}"  // For Windows
+        // sh "${pythonExecutable} ${pythonScriptPath}"  // For Linux/Mac
+    }
+    
+    stage('Deactivate Python Environment') {
+        // Deactivate the virtual environment
+        bat "${virtualEnvPath}/Scripts/deactivate"  // For Windows
+        // sh "deactivate"  // For Linux/Mac
+    }
+}
