@@ -1,3 +1,34 @@
+I am writing to nominate Hitesh [Last Name] for the [Award Name] in recognition of his exceptional contributions to the successful implementation of the API Hub initiative within the Shareworks team.
+
+Background:
+Hitesh, a senior member in our Shareworks team, has consistently demonstrated a proactive and innovative approach to his work. His standout achievement is his instrumental role in building the API Hub, a transformative initiative by the MS at Work India team. The API Hub aims to create a centralized service that connects all MS at Work platforms, including Shareworks, Morgan Stanley, and ETrade. This service is hosted on the private cloud infrastructure of Morgan Stanley.
+
+Key Contributions:
+
+Proactive Initiative:
+
+Hitesh took the initiative to participate in the creation of the API Hub, showcasing his proactive leadership and dedication to advancing our technological capabilities.
+Key Work and Collaboration:
+
+He played a pivotal role in the project by handling key responsibilities and effectively collaborating with stakeholders. His ability to navigate and coordinate with various teams ensured the successful execution of the API Hub initiative.
+Private Cloud Setup:
+
+Hitesh's commitment extended beyond the initial stages of the project. He completed a significant portion of the private cloud setup, demonstrating technical expertise and contributing to the robustness of the centralized service.
+Impact:
+The API Hub initiative led by Hitesh has had a profound impact on our organization. By creating a common service that connects multiple platforms, it has streamlined communication and data exchange across different MS at Work entities. This not only enhances efficiency but also lays the foundation for future collaborative efforts.
+
+Conclusion:
+Hitesh's dedication, leadership, and technical acumen have been critical to the success of the API Hub initiative. His contributions align with the core values of our organization and exemplify excellence in innovation, collaboration, and proactive problem-solving.
+
+I wholeheartedly recommend Hitesh for the [Award Name] in recognition of his outstanding efforts and achievements. His commitment to driving technological advancements and fostering collaboration makes him a deserving candidate for this prestigious award.
+
+Thank you for considering Hitesh for this recognition.
+
+Best Regards,
+
+[Your Full Name]
+
+
 pipeline {
     agent any
 
