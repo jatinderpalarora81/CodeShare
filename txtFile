@@ -1,3 +1,7 @@
+{jira:issues|jql=project = "Your Project" AND status = Open|columns=key,summary,status}
+
+
+
 I am writing to nominate Hitesh [Last Name] for the [Award Name] in recognition of his exceptional contributions to the successful implementation of the API Hub initiative within the Shareworks team.
 
 Background:
