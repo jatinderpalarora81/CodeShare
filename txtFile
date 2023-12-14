@@ -1,3 +1,18 @@
+ {table-filter}
+|| Header 1 || Header 2 || Header 3 ||
+| Value A  | Count1  | Data1   |
+| Value B  | Count2  | Data2   |
+| Value A  | Count3  | Data3   |
+| Value B  | Count4  | Data4   |
+{table-filter}
+
+{table-transformer:groupBy=1|aggregationConfig=[{aggregateColumnOperation={name=count}, column=2}, {aggregateColumnOperation={name=first}, column=3}]}
+|| Header 1 || Count || Aggregated Data ||
+| Value A   | 2     | Data1, Data3    |
+| Value B   | 2     | Data2, Data4    |
+{table-transformer}
+
+
 {jira:issues|jql=project = "Your Project" AND status = Open|columns=key,summary,status}
 
 
