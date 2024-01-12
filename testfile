@@ -1,3 +1,65 @@
+import os
+import csv
+import shutil
+
+def find_web_files(java_filename):
+    # Replace .java with .html and .jsp in the file name
+    html_filename = java_filename.replace(".java", ".html")
+    jsp_filename = java_filename.replace(".java", ".jsp")
+    return html_filename, jsp_filename
+
+def search_web_files(directory, java_files):
+    web_files = set()
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith((".html", ".jsp")):
+                web_files.add(file)
+    return web_files
+
+def create_missing_files_csv(csv_file, code_directory, output_csv):
+    # Read the CSV file to get the list of .java files
+    with open(csv_file, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        java_files = [row[0] for row in reader]
+
+    # Search for corresponding .html and .jsp files in the code base
+    web_files = search_web_files(code_directory, java_files)
+
+    # Find files with no corresponding .html or .jsp version
+    missing_files = set(java_files) - web_files
+
+    # Create a new CSV file with missing files
+    with open(output_csv, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for missing_file in missing_files:
+            writer.writerow([missing_file])
+
+    # Copy missing .java files to a new directory if needed
+    for missing_file in missing_files:
+        src_path = os.path.join(code_directory, missing_file)
+        dest_path = os.path.join('new_files_directory', missing_file)
+        shutil.copy2(src_path, dest_path)
+
+if __name__ == "__main__":
+    # Replace 'your_csv_file.csv', 'your_code_directory', and 'output_csv_file.csv' with actual paths
+    csv_file_path = 'your_csv_file.csv'
+    code_directory_path = 'your_code_directory'
+    output_csv_path = 'output_csv_file.csv'
+
+    create_missing_files_csv(csv_file_path, code_directory_path, output_csv_path)
+
+
+
+
+
+
+
+
+
+
+
+
+
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
 from langchain.vectorstores import DocArrayInMemorySearch
