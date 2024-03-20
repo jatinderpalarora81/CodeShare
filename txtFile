@@ -1,4 +1,32 @@
- {table-filter}
+import requests
+from bs4 import BeautifulSoup
+
+def extract_text(url):
+    # Fetch the HTML content of the website
+    response = requests.get(url)
+    if response.status_code == 200:
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # Remove script, style, and other non-text elements
+        for script in soup(["script", "style", "meta", "link", "head", "iframe", "a", "noscript", "footer", "nav"]):
+            script.decompose()
+        # Get the text
+        text = soup.get_text()
+        # Remove leading and trailing spaces
+        text = "\n".join(line.strip() for line in text.splitlines())
+        # Remove empty lines
+        text = "\n".join(line for line in text.splitlines() if line.strip())
+        return text
+    else:
+        return "Failed to fetch website content."
+
+# Example usage
+url = "https://economictimes.indiatimes.com/mf/analysis/these-5-stocks-held-by-at-least-10-smallcap-mfs-rallied-over-100-in-fy24/articleshow/108643204.cms"  # Replace this with the desired website URL
+text_content = extract_text(url)
+print(text_content)
+
+
+{table-filter}
 || Header 1 || Header 2 || Header 3 ||
 | Value A  | Count1  | Data1   |
 | Value B  | Count2  | Data2   |
