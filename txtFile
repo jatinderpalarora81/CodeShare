@@ -8,10 +8,12 @@ def extract_text(url):
         # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.content, 'html.parser')
         # Remove script, style, and other non-text elements
-        for script in soup(["script", "style", "meta", "link", "head", "iframe", "a", "noscript", "footer", "nav"]):
+        for script in soup(["script", "style", "meta", "link", "head", "a", "noscript", "footer", "nav", "form"]):
             script.decompose()
         # Get the text
-        text = soup.get_text()
+#         text = soup.get_text()
+        body_element = soup.find('body')
+        text = body_element.get_text(separator=' ')    
         # Remove leading and trailing spaces
         text = "\n".join(line.strip() for line in text.splitlines())
         # Remove empty lines
@@ -19,11 +21,10 @@ def extract_text(url):
         return text
     else:
         return "Failed to fetch website content."
-
-# Example usage
-url = "https://economictimes.indiatimes.com/mf/analysis/these-5-stocks-held-by-at-least-10-smallcap-mfs-rallied-over-100-in-fy24/articleshow/108643204.cms"  # Replace this with the desired website URL
-text_content = extract_text(url)
-print(text_content)
+    
+url = "https://munafasutra.com/nse/StockMarketNEWS/"  # Replace this with the desired website URL
+formatted_text = extract_text(url)
+print(formatted_text)
 
 
 {table-filter}
