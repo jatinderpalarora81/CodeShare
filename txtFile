@@ -1,3 +1,22 @@
+Itegration of Scheduled Job Framework:
+Action: Implement and integrate a scheduled job framework within the Shareworks system to automate tasks and improve efficiency.
+Measurement: Completion of scheduled job framework implementation within the agreed-upon timeframe.
+Target Date: [Insert specific target date here]
+Stakeholder Convincing:
+Action: Clearly communicate the benefits of integrating the scheduled job framework to stakeholders, addressing any concerns or objections they may have.
+Measurement: Stakeholder buy-in achieved, evidenced by their understanding and agreement to proceed with the integration.
+Target Date: [Insert specific target date here]
+Coordination between Indian and Calgary Teams:
+Action: Facilitate effective communication and collaboration between the Indian and Calgary teams involved in the integration process.
+Measurement: Regular progress updates, synchronized efforts, and minimal delays due to miscommunication or misunderstandings.
+Target Date: [Insert specific target date here]
+Technical Assistance Provision:
+Action: Provide necessary technical guidance and support to the teams involved in implementing the scheduled job framework.
+Measurement: Teams demonstrate proficiency in utilizing the framework, with any technical challenges addressed promptly.
+Target Date: [Insert specific target date here]
+
+
+
 import requests
 from bs4 import BeautifulSoup
 
