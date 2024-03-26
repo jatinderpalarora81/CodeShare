@@ -1,19 +1,25 @@
-Itegration of Scheduled Job Framework:
-Action: Implement and integrate a scheduled job framework within the Shareworks system to automate tasks and improve efficiency.
-Measurement: Completion of scheduled job framework implementation within the agreed-upon timeframe.
+Performance and Impact Goal: Struts 1 Removal
+
+Objective: To successfully complete the removal of Struts 1 framework from our system, minimizing manual efforts through automation, ensuring a swift transition to enable the team to focus on higher-value tasks, and maintaining team motivation throughout the process.
+
+Key Results:
+
+Completion of POC on Struts 1 Removal:
+Action: Develop and execute a Proof of Concept (POC) plan for the removal of Struts 1 framework.
+Measurement: Successful completion of the POC demonstrating the feasibility of Struts 1 removal and its replacement with a modern framework.
 Target Date: [Insert specific target date here]
-Stakeholder Convincing:
-Action: Clearly communicate the benefits of integrating the scheduled job framework to stakeholders, addressing any concerns or objections they may have.
-Measurement: Stakeholder buy-in achieved, evidenced by their understanding and agreement to proceed with the integration.
+Minimization of Manual Efforts through Automation:
+Action: Implement automation tools and scripts to streamline the conversion process from Struts 1 to the chosen modern framework, as well as for testing.
+Measurement: Reduction in manual effort hours spent on conversion and testing tasks compared to manual methods.
 Target Date: [Insert specific target date here]
-Coordination between Indian and Calgary Teams:
-Action: Facilitate effective communication and collaboration between the Indian and Calgary teams involved in the integration process.
-Measurement: Regular progress updates, synchronized efforts, and minimal delays due to miscommunication or misunderstandings.
+Timely Completion to Enable Better Work Allocation:
+Action: Prioritize efficient execution of the Struts 1 removal project to free up resources and time for the team to pick up higher-value tasks and projects.
+Measurement: Completion of Struts 1 removal within the agreed-upon timeframe, allowing the team to move on to new projects promptly.
 Target Date: [Insert specific target date here]
-Technical Assistance Provision:
-Action: Provide necessary technical guidance and support to the teams involved in implementing the scheduled job framework.
-Measurement: Teams demonstrate proficiency in utilizing the framework, with any technical challenges addressed promptly.
-Target Date: [Insert specific target date here]
+Maintenance of Team Motivation:
+Action: Implement strategies to keep the team motivated throughout the Struts 1 removal project, such as recognizing achievements, providing regular updates, and offering support and encouragement.
+Measurement: High team engagement and morale levels observed throughout the project duration.
+Target Date: Ongoing throughout the project duration.
 
 
 
