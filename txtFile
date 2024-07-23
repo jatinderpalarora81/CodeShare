@@ -1,3 +1,45 @@
+grammar AG;
+
+@header { package solutions.algotrade.tech.antlr.generated; }
+
+strategy : 'strategy' name=IDENTIFIER stock=IDENTIFIER qty=NUMBER '{' tradingRule+ '}' ;
+
+tradingRule : 'rule' name=IDENTIFIER '{' 'if' conditions 'then' action '}' ;
+
+conditions: expr (('and' | 'or') expr)* ;
+
+expr
+    : left=expr operator=('<' | '>' | '==' | '>=' | '<=' | '!=') right=expr  # binaryOperation
+    | left=expr operator='and' right=expr                                    # andOperation
+    | left=expr operator='or' right=expr                                     # orOperation
+    | funcCall=functionCall                                                  # funcCall
+    | varExpr=variable                                                       # varExpr
+    | numExpr=number                                                         # numExpr
+    | '(' subExpr=expr ')'                                                   # parens
+    ;
+
+functionCall : IDENTIFIER '(' params? ')' ;
+params       : expr (',' expr)* ;
+variable     : IDENTIFIER ;
+number       : NUMBER ;
+
+action   : 'buy' quantityAtPrice? executionStrategy? 
+         | 'sell' quantityAtPrice? executionStrategy? 
+         | 'hold' 
+         | 'alert' ;
+
+quantityAtPrice : quantity ('at' price)? ;
+quantity : NUMBER ('%' | 'units') ;
+price    : number | variable ;
+
+executionStrategy : 'using' IDENTIFIER ;
+
+IDENTIFIER : [a-zA-Z_][a-zA-Z0-9_-]* ;
+NUMBER     : [0-9]+ ('.' [0-9]+)? ;
+WS         : [ \t\r\n]+ -> skip ;
+
+
+
 🚀 Join our Hackathon from July 22nd to 26th! 🚀
 
 Get ready to innovate, collaborate, and showcase your skills. Start preparing your ideas now and form your dream team. Gain insights from industry experts, network with like-minded individuals, and compete for amazing prizes.
