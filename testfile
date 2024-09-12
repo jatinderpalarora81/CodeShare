@@ -1,7 +1,5 @@
 @startuml
 
-!define RECTANGLE
-
 title Generic API Interface for Spring Batch Jobs
 
 'Legend'
@@ -14,8 +12,7 @@ legend right
 endlegend
 
 'Spring Batch Architecture'
-@Component
-JobManagerService as "Job Manager Service" {
+component JobManagerService as "Job Manager Service" {
   [start(String jobName, Properties parameters) : Long]
   [restart(long executionId) : Long]
   [stop(long executionId) : boolean]
@@ -26,8 +23,7 @@ JobManagerService as "Job Manager Service" {
 }
 
 'Define batch job containers as components'
-@Component
-SpringBatchJob1 as "Spring Batch Job1 (JVM1)" {
+component SpringBatchJob1 as "Spring Batch Job1 (JVM1)" {
   [Job1Application] <<BatchJob>>
   [beforeJob(JobExecution jobExecution)]
   [afterJob(JobExecution jobExecution)]
@@ -39,8 +35,7 @@ SpringBatchJob1 as "Spring Batch Job1 (JVM1)" {
   [afterRead(T item)]
 }
 
-@Component
-SpringBatchJob2 as "Spring Batch Job2 (JVM2)" {
+component SpringBatchJob2 as "Spring Batch Job2 (JVM2)" {
   [Job2Application] <<BatchJob>>
   [beforeJob(JobExecution jobExecution)]
   [afterJob(JobExecution jobExecution)]
@@ -53,8 +48,7 @@ SpringBatchJob2 as "Spring Batch Job2 (JVM2)" {
 }
 
 'Job Repository for storing job details and execution information'
-@Database
-JobRepository as "Job Repository (Database)" {
+database JobRepository as "Job Repository (Database)" {
   [job_execution]
   [step_execution]
   [job_instance]
@@ -91,6 +85,17 @@ end note
 
 @enduml
 
+
+
+
+
+
+
+
+
+
+
+-
 
 
 
