@@ -11,7 +11,7 @@ legend right
 endlegend
 
 package "Job Manager Service" {
-  component JobManagerService as "Job Manager Service" <<Component>> {
+  component JobManagerService as "Job Manager Service" {
     ..Control APIs..
     * start(String jobName, Properties parameters) : Long
     * restart(Long executionId) : Long
@@ -34,7 +34,7 @@ package "Job Manager Service" {
 }
 
 package "Spring Batch Jobs (JVMs)" {
-  component SpringBatchJob1 as "Spring Batch Job 1 (JVM1)" <<BatchJob>> {
+  component SpringBatchJob1 as "Spring Batch Job 1 (JVM1)" {
     ..Job Control Methods..
     * beforeJob(JobExecution jobExecution)
     * afterJob(JobExecution jobExecution)
@@ -48,7 +48,7 @@ package "Spring Batch Jobs (JVMs)" {
     * afterRead(T item)
   }
 
-  component SpringBatchJob2 as "Spring Batch Job 2 (JVM2)" <<BatchJob>> {
+  component SpringBatchJob2 as "Spring Batch Job 2 (JVM2)" {
     ..Job Control Methods..
     * beforeJob(JobExecution jobExecution)
     * afterJob(JobExecution jobExecution)
@@ -64,7 +64,7 @@ package "Spring Batch Jobs (JVMs)" {
 }
 
 package "Common Resources" {
-  database JobRepository as "Job Repository (Database)" <<Database>> {
+  database JobRepository as "Job Repository (Database)" {
     [job_execution]
     [step_execution]
     [job_instance]
@@ -103,6 +103,7 @@ note bottom of SpringBatchJob2
 end note
 
 @enduml
+
 
 
 
