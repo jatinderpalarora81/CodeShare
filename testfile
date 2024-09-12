@@ -1,89 +1,90 @@
 @startuml
 
-title Generic API Interface for Spring Batch Jobs
+title Spring Batch Job Manager Service with Multiple Jobs
 
 'Legend'
 legend right
-  [C4 Level 2: System Container Diagram]
+  [C4 Level 2: Container Diagram]
   - Job Manager Service exposes APIs to control batch jobs.
   - Each batch job (Job1, Job2, etc.) runs in a separate JVM.
   - The job control APIs interact with Spring Batch through JobOperator.
   - Listeners are exposed for job lifecycle events.
 endlegend
 
-'Spring Batch Architecture'
-component JobManagerService as "Job Manager Service" {
-  [start(String jobName, Properties parameters) : Long]
-  [restart(long executionId) : Long]
-  [stop(long executionId) : boolean]
-  [getRunningExecutions(String jobName) : Set<Long>]
-  [getJobInstances(String jobName, int start, int count) : List<Long>]
-  [getSummary(long executionId) : String]
-  [getJobNames() : Set<String>]
+package "Job Manager Service" {
+  component JobManagerService as "Job Manager Service" <<Component>> {
+    [start(String jobName, Properties parameters) : Long]
+    [restart(long executionId) : Long]
+    [stop(long executionId) : boolean]
+    [getRunningExecutions(String jobName) : Set<Long>]
+    [getJobInstances(String jobName, int start, int count) : List<Long>]
+    [getSummary(long executionId) : String]
+    [getJobNames() : Set<String>]
+  }
+
+  interface JobOperator {
+    + start(String jobName, Properties parameters)
+    + restart(Long executionId)
+    + stop(Long executionId)
+    + getJobExecutions(String jobName)
+  }
 }
 
-'Define batch job containers as components'
-component SpringBatchJob1 as "Spring Batch Job1 (JVM1)" {
-  [Job1Application] <<BatchJob>>
-  [beforeJob(JobExecution jobExecution)]
-  [afterJob(JobExecution jobExecution)]
-  [beforeStep(StepExecution stepExecution)]
-  [afterStep(StepExecution stepExecution)]
-  [beforeChunk(ChunkContext chunkContext)]
-  [afterChunk(ChunkContext chunkContext)]
-  [beforeRead()]
-  [afterRead(T item)]
+package "Spring Batch Jobs" {
+  component SpringBatchJob1 as "Spring Batch Job1 (JVM1)" <<Component>> {
+    [Job1Application] <<BatchJob>>
+    [beforeJob(JobExecution jobExecution)]
+    [afterJob(JobExecution jobExecution)]
+    [beforeStep(StepExecution stepExecution)]
+    [afterStep(StepExecution stepExecution)]
+  }
+
+  component SpringBatchJob2 as "Spring Batch Job2 (JVM2)" <<Component>> {
+    [Job2Application] <<BatchJob>>
+    [beforeJob(JobExecution jobExecution)]
+    [afterJob(JobExecution jobExecution)]
+    [beforeStep(StepExecution stepExecution)]
+    [afterStep(StepExecution stepExecution)]
+  }
 }
 
-component SpringBatchJob2 as "Spring Batch Job2 (JVM2)" {
-  [Job2Application] <<BatchJob>>
-  [beforeJob(JobExecution jobExecution)]
-  [afterJob(JobExecution jobExecution)]
-  [beforeStep(StepExecution stepExecution)]
-  [afterStep(StepExecution stepExecution)]
-  [beforeChunk(ChunkContext chunkContext)]
-  [afterChunk(ChunkContext chunkContext)]
-  [beforeRead()]
-  [afterRead(T item)]
+package "Common Resources" {
+  database JobRepository as "Job Repository" <<Database>> {
+    [job_execution]
+    [step_execution]
+    [job_instance]
+  }
 }
 
-'Job Repository for storing job details and execution information'
-database JobRepository as "Job Repository (Database)" {
-  [job_execution]
-  [step_execution]
-  [job_instance]
-}
-
-JobManagerService -down- JobRepository : "Job execution control"
-JobManagerService -down- SpringBatchJob1 : "API control & status"
-JobManagerService -down- SpringBatchJob2 : "API control & status"
-SpringBatchJob1 -down- JobRepository : "Read/Write Job Execution Data"
-SpringBatchJob2 -down- JobRepository : "Read/Write Job Execution Data"
+'Relationships'
+JobManagerService - JobOperator : "Uses JobOperator"
+JobManagerService -down- JobRepository : "Read/Write job execution data"
+SpringBatchJob1 -down- JobRepository : "Read/Write job data"
+SpringBatchJob2 -down- JobRepository : "Read/Write job data"
+JobManagerService -down- SpringBatchJob1 : "Control APIs"
+JobManagerService -down- SpringBatchJob2 : "Control APIs"
 
 note right of JobManagerService
   Job Manager Service exposes:
   - Job control APIs (start, stop, restart, etc.)
-  - Job status & summary retrieval (getRunningExecutions, getJobNames, getSummary)
-  - Listener APIs for job lifecycle (beforeJob, afterJob, etc.)
+  - Job status retrieval (getJobNames, getSummary, etc.)
+  - Listener APIs for job lifecycle (beforeJob, afterJob)
 end note
 
-note right of SpringBatchJob1
-  Job1 lifecycle listeners:
+note bottom of SpringBatchJob1
+  Job1 Lifecycle Listeners:
   - beforeJob, afterJob
   - beforeStep, afterStep
-  - beforeChunk, afterChunk
-  - beforeRead, afterRead
 end note
 
-note right of SpringBatchJob2
-  Job2 lifecycle listeners:
+note bottom of SpringBatchJob2
+  Job2 Lifecycle Listeners:
   - beforeJob, afterJob
   - beforeStep, afterStep
-  - beforeChunk, afterChunk
-  - beforeRead, afterRead
 end note
 
 @enduml
+
 
 
 
