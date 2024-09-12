@@ -2,23 +2,15 @@
 
 title Spring Batch Job Manager Service - API Control for Multiple Jobs
 
-'Legend'
-legend right
-  [C4 Level 2: Container Diagram]
-  - The Job Manager Service provides APIs for controlling batch jobs.
-  - Each Spring Batch job runs in a separate JVM.
-  - The Job Manager Service interacts with the Spring Batch jobs and repository through a common interface.
-endlegend
-
 package "Job Manager Service" {
   component JobManagerService as "Job Manager Service" {
-    ..Control APIs..
+    [Control APIs]
     * start(String jobName, Properties parameters) : Long
     * restart(Long executionId) : Long
     * stop(Long executionId) : boolean
     * getRunningExecutions(String jobName) : Set<Long>
-    
-    ..Getter APIs..
+
+    [Getter APIs]
     * getJobInstances(String jobName, int start, int count) : List<Long>
     * getJobNames() : Set<String>
     * getSummary(Long executionId) : String
@@ -33,76 +25,8 @@ package "Job Manager Service" {
   }
 }
 
-package "Spring Batch Jobs (JVMs)" {
-  component SpringBatchJob1 as "Spring Batch Job 1 (JVM1)" {
-    ..Job Control Methods..
-    * beforeJob(JobExecution jobExecution)
-    * afterJob(JobExecution jobExecution)
-    * beforeStep(StepExecution stepExecution)
-    * afterStep(StepExecution stepExecution)
-    
-    ..Chunk and Read Listeners..
-    * beforeChunk(ChunkContext chunkContext)
-    * afterChunk(ChunkContext chunkContext)
-    * beforeRead()
-    * afterRead(T item)
-  }
-
-  component SpringBatchJob2 as "Spring Batch Job 2 (JVM2)" {
-    ..Job Control Methods..
-    * beforeJob(JobExecution jobExecution)
-    * afterJob(JobExecution jobExecution)
-    * beforeStep(StepExecution stepExecution)
-    * afterStep(StepExecution stepExecution)
-    
-    ..Chunk and Read Listeners..
-    * beforeChunk(ChunkContext chunkContext)
-    * afterChunk(ChunkContext chunkContext)
-    * beforeRead()
-    * afterRead(T item)
-  }
-}
-
-package "Common Resources" {
-  database JobRepository as "Job Repository (Database)" {
-    [job_execution]
-    [step_execution]
-    [job_instance]
-  }
-}
-
-'Relationships'
-JobManagerService - JobOperator : "Uses JobOperator"
-JobManagerService -down- JobRepository : "Read/Write job execution data"
-SpringBatchJob1 -down- JobRepository : "Read/Write job data"
-SpringBatchJob2 -down- JobRepository : "Read/Write job data"
-JobManagerService -down- SpringBatchJob1 : "Control APIs"
-JobManagerService -down- SpringBatchJob2 : "Control APIs"
-
-note right of JobManagerService
-  Job Manager Service exposes APIs to:
-  - Start, stop, and restart jobs.
-  - Fetch job status and instances.
-  - Handle listeners for job lifecycle events.
-end note
-
-note bottom of SpringBatchJob1
-  Job1 Lifecycle Listeners:
-  - beforeJob, afterJob
-  - beforeStep, afterStep
-  - beforeChunk, afterChunk
-  - beforeRead, afterRead
-end note
-
-note bottom of SpringBatchJob2
-  Job2 Lifecycle Listeners:
-  - beforeJob, afterJob
-  - beforeStep, afterStep
-  - beforeChunk, afterChunk
-  - beforeRead, afterRead
-end note
-
 @enduml
+
 
 
 
