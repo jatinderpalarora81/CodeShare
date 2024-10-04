@@ -1,3 +1,18 @@
+As a development manager I want to write feedback of my colleague. Reframe below line in more professional way
+
+1. Poulami is the key QA member for Codebusters team. She is helping the team in creating test data.
+2. She has helped in StrutsBGone team along with Codebusters in Struts removal activity. 
+3. She proactively asked for more challenging work and contributed in automation and Struts removal.
+
+Constructive feedback:
+She should increase her interaction with Calgary team. She has potential and capability to contribute more on automation of high impact use cases of Shareworks platform 
+
+--------
+
+
+
+------
+
 If you are using Gradle instead of Maven, the process of integrating svc2 into svc1 will follow similar steps, but with Gradle-specific configurations.
 
 Let’s walk through the scenario where:
