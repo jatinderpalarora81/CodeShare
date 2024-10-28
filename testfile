@@ -1,15 +1,39 @@
-As a development manager I want to write feedback of my colleague. Reframe below line in more professional way
+Project Title: Intelligent Code & Document Analysis Using GenAI
 
-1. Poulami is the key QA member for Codebusters team. She is helping the team in creating test data.
-2. She has helped in StrutsBGone team along with Codebusters in Struts removal activity. 
-3. She proactively asked for more challenging work and contributed in automation and Struts removal.
+Description: In this project, we aim to leverage the capabilities of Generative AI to create a tool that analyzes code and documentation to improve code quality, security, and maintainability. By scanning project documents (in text format) and dividing the codebase into manageable chunks, we plan to utilize the OpenAI API for comprehensive analysis based on the following key objectives:
 
-Constructive feedback:
-She should increase her interaction with Calgary team. She has potential and capability to contribute more on automation of high impact use cases of Shareworks platform 
+Coding Standards Compliance: Check if the code adheres to project-specific coding styles and standards as defined in the provided documentation. This will help ensure consistency and adherence to best practices throughout the codebase.
+Vulnerability and Security Analysis: Identify common security risks, including SQL injection, cross-site scripting, and other cyber vulnerabilities, enhancing the project's robustness against potential threats.
+Memory Leak Detection: Analyze the code for potential memory leaks, providing insights into areas where memory management can be improved, particularly in resource-intensive modules.
+Custom Solutions Identification: Detect and evaluate custom implementations within the code. For instance, our project has a custom JPA solution called SQLRunner. By supplying design and requirements documents related to SQLRunner as Retrieval-Augmented Generation (RAG) context, the tool will recognize instances and variations of SQLRunner in the code.
+Design Pattern Analysis: Review the current use of design patterns within the code, identifying where established patterns are being utilized or where there are opportunities to implement them for better code structure and reusability.
+Bug Detection: Use GenAI to scan for potential bugs based on established programming rules and contextual cues, facilitating proactive debugging and overall stability.
+Impact: This project will yield a powerful GenAI-based code analysis tool that supports adherence to coding standards, enhances security, and promotes best practices in design patterns. It aims to help developers ensure a high-quality, maintainable, and secure codebase, driving efficiency and reliability in project development.
 
 --------
 
+Here’s a concise business-focused explanation for your hackathon idea:
 
+"This solution enhances code quality and security by automatically ensuring adherence to coding standards, detecting vulnerabilities, and identifying memory leaks, thus reducing the risk of production issues.
+By highlighting custom implementations and assessing design pattern usage, it optimizes maintainability and supports knowledge transfer.
+Automated bug detection reduces manual review effort, enabling faster development cycles and improving developer productivity.
+Real-time insights into security and code quality promote compliance and minimize potential cyber risks.
+Overall, this innovation lowers operational costs and accelerates modernization by preemptively addressing technical debt."
+
+
+------------               
+
+Here are five performance-focused key performance indicators (KPIs) for your GenAI hackathon solution:
+
+Code Compliance Accuracy: The precision in identifying adherence to coding standards and project-specific styles, benchmarked against project-defined guidelines.
+Vulnerability Detection Rate: The effectiveness in catching cybersecurity issues, like SQL injection and cross-site scripting, measured by false positive and false negative rates.
+Resource Leak Identification Efficiency: The solution's reliability in spotting potential memory leaks, impacting system performance and stability.
+Custom Solution Analysis Relevance: The relevance and accuracy in recognizing custom implementations, such as SQLRunner, and validating them against provided requirements.
+Pattern Recognition and Bug Detection Coverage: The comprehensiveness in detecting existing design patterns, suggesting improvements, and identifying potential bugs, with a focus on minimal oversight.
+These KPIs focus on maintaining high detection accuracy, reducing false findings, and ensuring that critical issues are identified effectively.
+
+
+----------
 
 ------
 
