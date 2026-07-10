@@ -1,0 +1,242 @@
+# Shareworks Defect-to-Fix Automation Plan
+
+**Goal:** Automate the flow *Splunk logs → defect identification → root cause in the Shareworks monolith → proposed fix*, built as GitHub Copilot custom agents, skills, and instructions modeled on assets in [github/awesome-copilot](https://github.com/github/awesome-copilot).
+
+**Ground rules (from our discussion):**
+
+- Platform: **GitHub Copilot** (VS Code agent mode, Copilot CLI, and later the Copilot coding agent on github.com)
+- Codebase: **Java monolith** (Shareworks)
+- Autonomy: **Human-in-the-loop** — the agent investigates and drafts; an engineer approves before any PR
+- Trigger: **On-demand first**, scheduled/alert-driven automation in a later phase
+
+---
+
+## 1. Architecture at a Glance
+
+```
+                ┌─────────────────────────────────────────────────┐
+                │              Splunk (prod logs)                  │
+                │  read-only service account + Splunk MCP server   │
+                └───────────────┬─────────────────────────────────┘
+                                │ SPL queries via MCP
+        ┌───────────────────────▼───────────────────────┐
+        │  Agent 1: sw-splunk-triage                     │
+        │  find, dedupe & classify error signatures      │
+        └───────────────────────┬───────────────────────┘
+                                │ Defect Dossier (signature, stack
+                                │ trace, volume, first-seen, users hit)
+        ┌───────────────────────▼───────────────────────┐
+        │  Agent 2: sw-root-cause                        │
+        │  stack trace → code path in monolith,          │
+        │  git-history correlation, RCA hypothesis       │
+        └───────────────────────┬───────────────────────┘
+                                │ RCA Report (file:line, commit,
+                                │ hypothesis, confidence, blast radius)
+        ┌───────────────────────▼───────────────────────┐
+        │  Agent 3: sw-fix-engineer                      │
+        │  minimal fix + unit test + validation          │
+        │  ── human review gate ──                       │
+        └───────────────────────┬───────────────────────┘
+                                │
+                     Draft PR / Jira ticket + RCA doc
+```
+
+Three agents rather than one keeps each context window focused (Splunk-speak vs. codebase-speak vs. fix-writing), and each hand-off produces a reviewable artifact — which is exactly where your human-in-the-loop gates sit.
+
+---
+
+## 2. What to Reuse from awesome-copilot
+
+I scanned the repo's `agents/` (190+), `skills/` (300+), `instructions/`, `plugins/`, and `hooks/` folders. Nothing is Splunk-specific out of the box (only passing mentions in `devops-expert` and a k8s instruction file), but several assets are direct templates for each stage:
+
+### Templates for the Splunk triage agent
+
+| Asset | Why it matters |
+|---|---|
+| `agents/new-relic-incident-response.agent.md` | Best structural template: observability MCP server + GitHub tools, "correlate telemetry with code changes, suggest fixes." Swap New Relic MCP for Splunk MCP and NRQL for SPL. |
+| `agents/dynatrace-expert.agent.md` | Shows how to embed a full query-language playbook (DQL) inside an agent — do the same with a curated SPL library for Shareworks indexes. |
+| `agents/aws-incident-triage.agent.md` | Excellent investigation protocol: time-boxed phases, "evidence not hunches," correlated-alarm grouping, read-only default. Adopt its phase structure wholesale. |
+| `agents/kusto-assistant.agent.md`, `agents/elasticsearch-observability.agent.md` | More examples of log-query agents wired to an MCP server. |
+
+### Templates for the root-cause agent
+
+| Asset | Why it matters |
+|---|---|
+| `agents/debug.agent.md` | Systematic debug loop: reproduce → trace execution path → hypothesis → verify. Reuse Phases 2–3 for RCA. |
+| `agents/pagerduty-incident-responder.agent.md` | The "look at commits from 24h before incident start, estimate blast radius, propose fix-or-rollback" pattern — directly applicable to correlating Splunk first-seen timestamps with git history. |
+| `agents/monday-bug-fixer.agent.md` | Pattern for enriching a bare error with organizational context (swap Monday.com for Jira/Confluence if you use them). |
+| `agents/principal-software-engineer.agent.md`, `agents/critical-thinking.agent.md` | Persona guardrails to keep hypotheses honest (confidence levels, alternatives considered). |
+
+### Skills to adopt/adapt
+
+| Asset | Use |
+|---|---|
+| `skills/acquire-codebase-knowledge` | **Run once as Phase 0.** Generates `docs/codebase/` (STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, INTEGRATIONS, TESTING, CONCERNS) — this becomes the map the RCA agent uses to navigate the monolith instead of blind grepping. |
+| `skills/context-map` | Pre-change file mapping before the fix agent touches anything. |
+| `skills/incident-postmortem` | Template for the blameless RCA report artifact. |
+| `skills/create-implementation-plan` / `skills/refactor-plan` | For defects whose fix is bigger than a patch. |
+| `skills/security-review`, `skills/codeql` | Gate on the fix agent's output — a stock-plan platform fix must not introduce security regressions. |
+| `skills/repo-story-time` | Optional: commit-history archaeology when RCA points at old code. |
+
+### Instructions (auto-applied coding standards)
+
+- `instructions/java-*.instructions.md`, `instructions/springboot.instructions.md` — baseline Java standards for any generated fix
+- `instructions/code-review-generic.instructions.md` — review checklist applied to the agent's own diff
+- `instructions/self-explanatory-code-commenting.instructions.md` — keeps generated fixes clean
+
+### Packaging & governance patterns
+
+- `plugins/devops-oncall` — the packaging model to copy: a plugin bundling your agents + skills + instructions, installable via `copilot plugin install`
+- `plugins/doublecheck`, `agents/doublecheck.agent.md` — verification pass before anything is handed to a human
+- `hooks/tool-guardian`, `hooks/session-logger` — enforce read-only Splunk access and keep an audit trail of every agent session (important for SOX/compliance)
+- `workflows/` — awesome-copilot's markdown-defined GitHub Actions automations; the pattern for Phase 3 scheduled scans
+
+---
+
+## 3. Splunk Connectivity (the one piece awesome-copilot doesn't provide)
+
+Use a Splunk MCP server so agents can run SPL directly:
+
+1. **Official Splunk MCP Server** — [Splunkbase app 7931](https://splunkbase.splunk.com/app/7931), runs inside Splunk (Cloud or Enterprise 9.4+), exposes search over MCP.
+2. **[splunk/splunk-mcp-server2](https://github.com/splunk/splunk-mcp-server2)** — standalone Python/TypeScript server; runs searches, returns JSON/CSV/Markdown, and ships **input SPL validation guardrails and output sanitization** — valuable given Shareworks logs may contain participant PII.
+
+Recommended setup:
+
+- Dedicated **read-only** Splunk service account/token, scoped to only the Shareworks app indexes
+- Enforce a search-window cap (e.g., max 7 days) and result cap in the MCP server config
+- Output sanitization ON: strip/emails, SSN-like patterns, account numbers before they reach the model
+- Register in the repo's MCP config so it works in VS Code and Copilot CLI; add via repo settings for the Copilot coding agent later
+
+---
+
+## 4. Custom Assets to Build — the `shareworks-defect-hunter` Plugin
+
+Repo layout (mirrors awesome-copilot conventions):
+
+```
+shareworks-defect-hunter/
+├── agents/
+│   ├── sw-splunk-triage.agent.md
+│   ├── sw-root-cause.agent.md
+│   └── sw-fix-engineer.agent.md
+├── skills/
+│   ├── sw-spl-playbook/          # curated SPL for Shareworks indexes
+│   ├── sw-stacktrace-to-code/    # trace frame → package/module mapping rules
+│   ├── sw-defect-dossier/        # output template for Agent 1
+│   └── sw-rca-report/            # blameless RCA template (from incident-postmortem)
+├── instructions/
+│   ├── shareworks-java.instructions.md    # monolith conventions, forbidden patterns
+│   └── shareworks-review.instructions.md  # review gates for generated fixes
+├── hooks/
+│   └── audit-logger/             # session audit trail (from session-logger)
+└── mcp/
+    └── splunk-mcp.json           # server registration + guardrail config
+```
+
+### Agent 1 — `sw-splunk-triage` (defect identification)
+
+Skeleton (modeled on `new-relic-incident-response` + `aws-incident-triage`):
+
+```markdown
+---
+name: Shareworks Splunk Triage
+description: Identify, deduplicate and classify production defects from
+  Shareworks Splunk logs; produce a Defect Dossier for root-cause analysis.
+tools: ["read", "search", "splunk-mcp/*"]
+mcp-servers:
+  splunk-mcp:
+    type: http
+    url: "https://<splunk-mcp-host>/mcp"
+    headers: {"Authorization": "Bearer $SPLUNK_MCP_TOKEN"}
+    tools: ["*"]
+---
+You are an on-call triage engineer for the Shareworks stock plan platform.
+You think in evidence: every claim is backed by a Splunk event. Default to
+read-only. Never include participant PII in any output.
+
+## Protocol
+1. **Scope** — take an error signature, Jira ID, or time window from the user.
+2. **Hunt** — run the SPL playbook (skills/sw-spl-playbook): error/exception
+   scan by index and sourcetype, group by normalized signature
+   (exception class + top app frame), trend vs. 7-day baseline.
+3. **Dedupe & classify** — cluster events by signature; classify severity by
+   volume, user impact (distinct session/participant count), and trend.
+4. **Dossier** — emit a Defect Dossier per skills/sw-defect-dossier:
+   signature, full sanitized stack trace, first/last seen, count, affected
+   endpoints/jobs, suspected release window, sample correlation IDs.
+5. **Hand off** — recommend which dossiers warrant root-cause analysis.
+```
+
+The `sw-spl-playbook` skill is where your team's Splunk knowledge gets encoded — index names, sourcetypes, correlation-ID field names, known-noise exclusion lists, baseline queries. This is the highest-leverage asset: it converts tribal on-call knowledge into something every engineer's Copilot can use.
+
+### Agent 2 — `sw-root-cause`
+
+Modeled on `debug.agent.md` + `pagerduty-incident-responder`:
+
+- Input: a Defect Dossier
+- Loads `docs/codebase/` (from `acquire-codebase-knowledge`) to orient in the monolith
+- Maps stack-trace frames to files using `sw-stacktrace-to-code` rules (package → module mapping, generated-code and framework-frame skip lists)
+- Traces the execution path: entry point → failing frame; inspects null-paths, boundary conditions, concurrency, config reads
+- Correlates first-seen timestamp with `git log` / recent PRs / deploy tags in that window
+- Output: **RCA Report** — root-cause hypothesis with confidence level, evidence chain (Splunk event → code line → commit), alternatives considered and ruled out, blast radius
+
+### Agent 3 — `sw-fix-engineer`
+
+Modeled on `tdd-red/green/refactor` + `doublecheck`:
+
+- Writes a failing unit test that reproduces the defect (when feasible) **before** the fix
+- Proposes the **minimal** fix consistent with `shareworks-java.instructions.md`
+- Runs build + targeted tests; runs a `doublecheck`-style self-review and the security-review skill
+- **Stops for human review**: presents diff + RCA report + test evidence. Only on approval does it open a draft PR (Phase 2+)
+
+---
+
+## 5. End-to-End Flow (Phase 1, on-demand)
+
+1. Engineer (in VS Code or Copilot CLI): `@sw-splunk-triage what's spiking in prod since yesterday's release?`
+2. Agent runs playbook SPL, returns 3 deduped Defect Dossiers ranked by impact
+3. Engineer picks one: `@sw-root-cause take dossier #2`
+4. Agent returns RCA report: `VestingCalculator.java:412`, introduced in commit `abc123` (last Tuesday's PR #4521), NPE when a grant has a null cliff date — 96 % confidence, evidence chain attached
+5. Engineer: `@sw-fix-engineer fix it`
+6. Agent writes failing test, minimal null-guard fix, runs tests, self-reviews → presents diff for approval
+7. Engineer approves → draft PR with RCA report in the description; Jira ticket linked
+
+---
+
+## 6. Phased Rollout
+
+**Phase 0 — Foundations (week 1–2)**
+Stand up Splunk MCP server (read-only token, sanitization on). Run `acquire-codebase-knowledge` on the monolith to generate `docs/codebase/`. Add Java + code-review instruction files to the repo. Validate the MCP connection from VS Code.
+
+**Phase 1 — On-demand triage (week 3–4)**
+Build `sw-splunk-triage` + `sw-spl-playbook` + `sw-defect-dossier`. Pilot with the on-call rotation; tune signature normalization and noise exclusions. Success metric: dossier quality (does on-call trust it?), time-to-identify.
+
+**Phase 2 — RCA + fix drafting (week 5–8)**
+Build `sw-root-cause` and `sw-fix-engineer` with the review gate. Measure RCA accuracy against engineer-confirmed root causes; track % of drafted fixes accepted with minor/no edits. Package everything as the `shareworks-defect-hunter` plugin for one-command install across the team.
+
+**Phase 3 — Automation (week 9+)**
+- **Scheduled scan:** GitHub Actions workflow (pattern: awesome-copilot `workflows/`) runs the triage agent hourly/daily via Copilot CLI in headless mode; new dossiers become enriched GitHub/Jira issues.
+- **Alert-driven:** Splunk saved-search alert → webhook → `repository_dispatch` → assign the issue to the **Copilot coding agent**, which runs RCA + fix and opens a draft PR (human still merges).
+- Add `tool-guardian` + `audit-logger` hooks before enabling any scheduled runs.
+
+**Phase 4 — Hardening & metrics**
+Dashboard: defects auto-triaged, mean-time-to-RCA, fix acceptance rate, false-positive rate. Feed misses back into the SPL playbook and stacktrace-mapping rules — the skills are living documents.
+
+---
+
+## 7. Risks & Guardrails (stock-plan platform specifics)
+
+- **PII/financial data in logs** — sanitize at the MCP layer, never in the prompt; forbid raw log excerpts in PR descriptions and Jira tickets (dossier template enforces this)
+- **Read-only telemetry** — the Splunk token can search only; agents never write to Splunk
+- **Change control / SOX** — human approval gate is structural (separate agent hand-off), not just a prompt instruction; audit-logger hook records every session
+- **Monolith scale** — RCA quality depends on Phase 0's codebase docs; refresh them on a schedule (a `workflows/` cron job can do this)
+- **Hallucinated root causes** — RCA report must cite an evidence chain (event → line → commit) and confidence level; `critical-thinking`/`devils-advocate` persona rules force alternatives to be listed
+- **Cost control** — time-boxed investigation phases (from `aws-incident-triage`) and search-window caps stop runaway agent loops
+
+---
+
+## 8. Immediate Next Steps
+
+1. Get a read-only Splunk service token and pick the MCP server flavor (Splunkbase app if you're on Splunk Cloud 9.4+; `splunk-mcp-server2` if you want the guardrails and self-hosting)
+2. Run `acquire-codebase-knowledge` against the monolith and review the generated docs
+3. I can scaffold the full `shareworks-defect-hunter` plugin — all three agent files, the four skills with templates, instruction files, and MCP config — as a ready-to-commit repo. Say the word.
