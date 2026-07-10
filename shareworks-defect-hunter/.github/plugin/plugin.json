@@ -1,0 +1,29 @@
+{
+  "name": "shareworks-defect-hunter",
+  "description": "Splunk-to-fix defect automation for the Shareworks stock plan platform: triage production errors from Splunk logs, locate root cause in the Java monolith, and draft minimal test-first fixes with a human approval gate.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Shareworks Engineering"
+  },
+  "license": "MIT",
+  "keywords": [
+    "splunk",
+    "incident-response",
+    "root-cause-analysis",
+    "defect-triage",
+    "java",
+    "observability",
+    "shareworks"
+  ],
+  "agents": [
+    "./agents/sw-splunk-triage.agent.md",
+    "./agents/sw-root-cause.agent.md",
+    "./agents/sw-fix-engineer.agent.md"
+  ],
+  "skills": [
+    "./skills/sw-spl-playbook/",
+    "./skills/sw-stacktrace-to-code/",
+    "./skills/sw-defect-dossier/",
+    "./skills/sw-rca-report/"
+  ]
+}

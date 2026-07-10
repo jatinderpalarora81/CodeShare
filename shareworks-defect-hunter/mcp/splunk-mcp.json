@@ -1,0 +1,54 @@
+{
+  "$comment": "Splunk MCP server registration for the Shareworks defect-hunter plugin. Copy the 'servers' block into .vscode/mcp.json for VS Code, or configure via repository Settings > Copilot > Coding agent > MCP configuration for the Copilot coding agent. Choose ONE of the two server options below.",
+
+  "servers": {
+
+    "splunk-mcp": {
+      "$comment": "OPTION A - Official Splunk MCP Server (Splunkbase app 7931), runs inside Splunk Cloud/Enterprise 9.4+. Replace host with your Splunk MCP endpoint.",
+      "type": "http",
+      "url": "https://SPLUNK_MCP_HOST/services/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:splunk-mcp-token}"
+      },
+      "tools": ["*"]
+    },
+
+    "splunk-mcp-selfhosted": {
+      "$comment": "OPTION B - splunk/splunk-mcp-server2 (self-hosted, includes SPL input validation guardrails and output sanitization). Recommended if logs may contain PII. Rename to 'splunk-mcp' if used, and remove Option A.",
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["splunk-mcp-server2"],
+      "env": {
+        "SPLUNK_HOST": "SPLUNK_SEARCH_HEAD_HOST",
+        "SPLUNK_PORT": "8089",
+        "SPLUNK_TOKEN": "${input:splunk-readonly-token}",
+        "SPLUNK_VERIFY_SSL": "true",
+        "SPLUNK_MAX_RESULTS": "1000",
+        "SPLUNK_MAX_TIME_WINDOW_DAYS": "7"
+      },
+      "tools": ["*"]
+    }
+  },
+
+  "inputs": [
+    {
+      "id": "splunk-mcp-token",
+      "type": "promptString",
+      "description": "Bearer token for the Splunk MCP endpoint (READ-ONLY service account, scoped to Shareworks indexes only)",
+      "password": true
+    },
+    {
+      "id": "splunk-readonly-token",
+      "type": "promptString",
+      "description": "Splunk auth token for the read-only service account (search-only capabilities, Shareworks indexes only)",
+      "password": true
+    }
+  ],
+
+  "$security_requirements": [
+    "Service account role: search-only. Explicitly deny: schedule_search on other apps, edit_* capabilities, |delete, |collect, |outputlookup.",
+    "Index scoping: srchIndexesAllowed limited to the Shareworks app/batch/web indexes.",
+    "Search quotas: set srchDiskQuota and srchJobsQuota low for this account to bound agent cost.",
+    "Rotate the token on your standard secret-rotation schedule; store as a repo/organization secret, never in files."
+  ]
+}
