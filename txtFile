@@ -1,3 +1,617 @@
+# WorkplaceIQ — Spec Kit + Figma MCP Runbook
+
+End-to-end flow for building a read-only stock plan analytics UI with GitHub Spec Kit,
+using the Figma MCP server as the design source and a Spring Batch REST API as the data source.
+
+---
+
+## Contents
+
+1. [Setup](#1-setup)
+2. [The file map](#2-the-file-map)
+3. [Phase 0 — Design intake](#phase-0--design-intake-before-any-spec-kit-command)
+4. [Phase 1 — Constitution](#phase-1--constitution)
+5. [Phase 2 — Feature slicing](#phase-2--feature-slicing)
+6. [Phase 3 — Specify](#phase-3--speckitspecify)
+7. [Phase 4 — Clarify](#phase-4--speckitclarify)
+8. [Phase 5 — Plan and design-context](#phase-5--speckitplan--the-design-context-file)
+9. [Phase 6 — Checklist](#phase-6--speckitchecklist-visual-conformance)
+10. [Phase 7 — Tasks and analyze](#phase-7--speckittasks--speckitanalyze)
+11. [Phase 8 — Implement and verify](#phase-8--speckitimplement--verify)
+12. [Command cheat sheet](#command-cheat-sheet)
+13. [Figma MCP rules for the agent](#figma-mcp-rules-for-the-agent)
+14. [Anti-patterns](#anti-patterns)
+
+---
+
+## 1. Setup
+
+```bash
+# Pin a release. Do not float on main for a team project.
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX.Y.Z
+
+specify init workplaceiq-ui --integration copilot   # or claude, cursor, etc.
+cd workplaceiq-ui
+
+specify check                # verify tooling
+specify integration list     # confirm your agent is wired up
+```
+
+**Figma MCP (VS Code):** `⌘⇧P` → `MCP: Add Server` → HTTP → `https://mcp.figma.com/mcp` → server ID `figma`.
+
+Two facts that shape everything below:
+
+- `get_design_context` returns a **React + Tailwind–shaped** representation regardless of your stack. It is design context, not production code. You must instruct the agent to translate it into Angular/React/whatever you actually use.
+- `get_variable_defs` (design tokens) is a **desktop-server** tool. If you're on the remote server only, plan to export Figma variables to JSON manually instead.
+
+Open the **project directory** in your editor, not its parent — otherwise the `/speckit.*` slash commands won't appear.
+
+---
+
+## 2. The file map
+
+Who creates what, and when.
+
+```
+workplaceiq-ui/
+├── .specify/
+│   ├── memory/
+│   │   └── constitution.md              ← YOU (via /speckit.constitution)   Phase 1
+│   ├── templates/                       ← Spec Kit
+│   └── scripts/                         ← Spec Kit
+│
+├── .github/prompts/                     ← Spec Kit (agent slash commands)
+│
+├── design/                              ← YOU, from Figma MCP              Phase 0
+│   ├── figma-sources.md                 ← frame index: name → node ID
+│   ├── tokens.json                      ← get_variable_defs export
+│   ├── design-system-rules.md           ← create_design_system_rules output
+│   ├── screen-inventory.md              ← the pre-spec extraction pass
+│   └── screens/
+│       ├── portfolio-overview.png       ← get_screenshot
+│       ├── portfolio-overview-empty.png
+│       └── portfolio-overview-error.png
+│
+├── contracts/
+│   └── openapi.yaml                     ← FROM THE BATCH TEAM, committed here
+│
+└── specs/
+    ├── 001-app-shell/
+    │   ├── spec.md                      ← /speckit.specify
+    │   ├── checklists/requirements.md   ← /speckit.specify (auto)
+    │   ├── plan.md                      ← /speckit.plan
+    │   ├── research.md                  ← /speckit.plan
+    │   ├── data-model.md                ← /speckit.plan
+    │   ├── design-context.md            ← /speckit.plan (YOU ask for this)
+    │   ├── quickstart.md                ← /speckit.plan
+    │   ├── contracts/                   ← /speckit.plan
+    │   ├── checklists/visual.md         ← /speckit.checklist
+    │   └── tasks.md                     ← /speckit.tasks
+    └── 002-portfolio-overview/
+        └── …same shape…
+```
+
+The `design/` folder is the piece Spec Kit does not give you. It is the bridge between Figma
+and the spec artifacts, and it is what makes the workflow reproducible when the MCP session
+is gone.
+
+---
+
+## Phase 0 — Design intake (before any Spec Kit command)
+
+Run these in a **plain agent chat**, not a slash command. You are building durable inputs,
+not requirements yet.
+
+### 0a. Frame index
+
+> Using the Figma MCP server, run `get_metadata` on the WorkplaceIQ file to get the node map.
+> Write `design/figma-sources.md` listing every top-level frame: frame name, node ID, page it
+> lives on, and whether it is a primary screen, a state variant, or a component. Do not write
+> code and do not describe visuals.
+
+**Result — `design/figma-sources.md`:**
+
+```markdown
+# WorkplaceIQ Figma Source Index
+File key: AbC123XyZ    Last synced: 2026-09-05
+
+| Frame | Node ID | Page | Type |
+|---|---|---|---|
+| App Shell / Desktop | 12:400 | Foundations | Primary |
+| Portfolio Overview / Desktop | 1204:5567 | Screens | Primary |
+| Portfolio Overview / Empty | 1204:5612 | Screens | State variant |
+| Portfolio Overview / Loading | 1204:5640 | Screens | State variant |
+| Portfolio Overview / Error | 1204:5668 | Screens | State variant |
+| Grant Detail / Desktop | 1310:2201 | Screens | Primary |
+| KPI Tile | 88:120 | Components | Component |
+| Data Table / Default | 88:340 | Components | Component |
+```
+
+Everything downstream references node IDs from this table. Node IDs survive renames; frame
+names do not.
+
+### 0b. Tokens
+
+> Run `get_variable_defs` across the Foundations page and write the result to
+> `design/tokens.json` as DTCG-format JSON. Group by colour, spacing, typography, radius,
+> elevation. Preserve Figma's variable names exactly — do not rename or "clean up".
+
+If you're on the remote MCP server only, export Figma variables to JSON from the Figma UI
+instead and commit the same file.
+
+### 0c. Design system rules
+
+> Run `create_design_system_rules` and save the output to `design/design-system-rules.md`.
+
+This is a file the Figma MCP generates specifically so the agent knows how to map design
+system concepts into your codebase. It's the highest-leverage single file for visual fidelity.
+Edit it afterwards to name your real component library and framework.
+
+### 0d. Screenshots
+
+> For each primary and state-variant frame in `design/figma-sources.md`, run `get_screenshot`
+> and save to `design/screens/<slug>.png`.
+
+Screenshots are supplemental context — a screenshot combined with the structured code output
+performs better than either alone, because imagery carries design *intent* that metadata misses.
+
+### 0e. Screen inventory — the most important file in Phase 0
+
+> For each primary frame in `design/figma-sources.md`, run `get_design_context` and write
+> `design/screen-inventory.md`. For every screen record: purpose in one line; every distinct
+> data element visible with its label and what it represents in business terms; every filter
+> or control; every drill-down or navigation target; which state variants exist. Record only
+> what is on the canvas. Do not infer requirements, do not propose components, do not write
+> code. Put anything ambiguous under "## Questions for business".
+
+**Result — `design/screen-inventory.md` (excerpt):**
+
+```markdown
+## Portfolio Overview — node 1204:5567
+
+Purpose: single-glance view of an employee's total equity position.
+
+### Data elements
+| # | Label on screen | Represents | Format shown |
+|---|---|---|---|
+| 1 | Total Portfolio Value | Sum of all award values | Currency, 0 dp |
+| 2 | Vested Value | Value of vested, unexercised holdings | Currency, 0 dp |
+| 3 | Unvested Value | Value of unvested tranches | Currency, 0 dp |
+| 4 | Next Vesting | Date + quantity of next tranche | Date + integer |
+| 5 | Exercisable Now | Quantity currently exercisable | Integer |
+| 6 | Expiring in 90 days | Quantity of awards nearing expiry | Integer |
+| 7 | As of | Data currency timestamp | Date |
+| 8 | Award breakdown | Table: type, granted, vested, unvested, value | Mixed |
+
+### Controls
+- Horizon selector: 3 / 6 / 12 months (affects #4 and upcoming-vesting chart only)
+- Currency toggle: local / USD
+- Row click on award breakdown → Grant Detail (node 1310:2201)
+
+### State variants present
+Empty (1204:5612), Loading (1204:5640), Error (1204:5668)
+
+### Questions for business
+- Does the currency toggle re-request data or reformat client-side?
+- Is "Expiring in 90 days" a fixed window or configurable?
+- What renders in Total Portfolio Value when FMV is unavailable for one award type?
+```
+
+Commit all of Phase 0 before touching Spec Kit. Now the design is repo-native, reviewable in
+PRs, and readable months later without a Figma session.
+
+---
+
+## Phase 1 — Constitution
+
+```
+/speckit.constitution Create the governing principles for WorkplaceIQ, a read-only
+stock plan analytics web UI.
+
+NON-NEGOTIABLE PRINCIPLES:
+
+1. READ-ONLY BY CONSTRUCTION. The UI issues no mutating HTTP requests. No forms that
+   submit, no elections, no transactions. Any requirement implying a write is a
+   specification defect to be raised, not implemented.
+
+2. NO CLIENT-SIDE FINANCIAL LOGIC. All aggregation, currency conversion, vesting
+   calculation and rounding happen upstream in the Spring Batch layer. The UI formats
+   values for display and never computes, sums or derives a financial figure.
+
+3. DESIGN TOKENS ONLY. No literal hex colours, px spacing, font sizes, radii or
+   shadow values in component code. Every visual value resolves to a token name from
+   design/tokens.json. A literal visual value in a component is a defect.
+
+4. FIGMA IS AUTHORITATIVE for layout and visual design, referenced by node ID from
+   design/figma-sources.md. Where code and Figma disagree, Figma wins; any accepted
+   deviation is recorded in the feature's design-context.md.
+
+5. FOUR STATES MANDATORY. Every data-bound component implements loading, empty, error
+   and stale/as-of states. A component with only a success path is incomplete.
+
+6. COMPONENT REUSE. Screens are composed from the shared library described in
+   design/design-system-rules.md. A new primitive requires documented justification.
+
+7. CONTRACT-FIRST DATA ACCESS. The UI consumes the versioned OpenAPI contract at
+   contracts/openapi.yaml. Client types are generated, never hand-written. The UI
+   holds no knowledge of Snowflake schemas, table names or batch scheduling.
+
+8. ACCESSIBILITY WCAG 2.2 AA. Every figure is announced with its unit, currency and
+   as-of date. Colour is never the sole carrier of meaning in charts.
+
+9. DATA HONESTY. The as-of timestamp is always visible on any screen showing figures.
+   Stale or partial data is labelled as such rather than silently rendered.
+```
+
+Principles 3 and 5 are what actually buy you visual fidelity later. Principle 2 and 7 keep the
+Snowflake / Spring Batch boundary from leaking into the UI.
+
+Review the generated `.specify/memory/constitution.md` and edit by hand where it softened your
+wording. Constitution text is loaded by `/speckit.plan` and `/speckit.analyze` on every feature,
+so it is worth being pedantic about.
+
+---
+
+## Phase 2 — Feature slicing
+
+One feature = one `/speckit.specify` = one branch = one `specs/NNN-*/` folder. Never one
+giant "build the UI" spec.
+
+| # | Feature | Contains |
+|---|---|---|
+| 001 | `app-shell` | Layout, nav, header, token wiring, API client, global loading/error/empty patterns, shared KPI tile and data table |
+| 002 | `portfolio-overview` | The dashboard screen |
+| 003 | `grant-detail` | Per-grant drill-down |
+| 004 | `vesting-schedule` | Timeline / schedule view |
+| 005 | `tax-and-proceeds` | Analytics screens |
+
+**Do 001 completely first.** Every later screen then composes real components instead of
+inventing near-duplicates. This one decision removes most of the visual drift people report.
+
+---
+
+## Phase 3 — `/speckit.specify`
+
+### What goes in, what stays out
+
+| In `spec.md` | NOT in `spec.md` |
+|---|---|
+| Which screens exist and what they communicate | Colours, spacing, font sizes, px dimensions |
+| Business meaning of each figure | Component names, framework, libraries |
+| Filters, drill-downs, navigation | API endpoint paths, field names |
+| Empty / loading / error / stale behaviour | Snowflake tables, batch schedule |
+| Who sees what (participant vs admin) | Chart library choices |
+| Figma frame **references** by node ID | Figma frame **contents** |
+| Measurable success criteria | |
+
+The spec command generates technology-agnostic success criteria verifiable without
+implementation details, and will fill unspecified details with reasonable defaults recorded in
+an Assumptions section. For a financial UI you want questions, not defaults — hence the last
+line of the prompt below.
+
+### Example — feature 002
+
+```
+/speckit.specify Portfolio Overview screen for WorkplaceIQ, a read-only stock plan
+analytics application used by employees to view their equity awards.
+
+DESIGN SOURCE — authoritative, reference only:
+- Figma frame "Portfolio Overview / Desktop", node 1204:5567
+- State variants: Empty 1204:5612, Loading 1204:5640, Error 1204:5668
+- Extracted inventory: design/screen-inventory.md, section "Portfolio Overview"
+- Screenshots: design/screens/portfolio-overview*.png
+Read the Figma node via the Figma MCP server for context. Reference frames by name and
+node ID only. Do NOT record colours, spacing, typography or pixel values in this spec —
+those belong in the implementation plan.
+
+USERS: employees holding equity awards; plan administrators viewing an employee in
+read-only support mode.
+
+WHAT THE SCREEN MUST COMMUNICATE:
+- total portfolio value, broken down by award type
+- vested vs unvested position
+- upcoming vesting events across a user-selected horizon (3/6/12 months)
+- exercisable quantity and awards expiring soon
+- an unmissable as-of date for every figure shown
+
+SCOPE CONSTRAINTS:
+- DISPLAY ONLY. No transactions, exercises, elections, edits or persisted preferences.
+  Filters and drill-down navigation are the only interactions. If the design appears to
+  imply an action, raise it as [NEEDS CLARIFICATION] instead of specifying it.
+- Data comes from an existing REST API populated by an upstream batch process. Treat the
+  API as an external dependency. Do not specify warehouse, batch or API internals.
+
+REQUIRED COVERAGE — write explicit requirements and acceptance scenarios for:
+- empty: no awards at all; awards exist but none in the selected horizon
+- loading, and behaviour when a response is slow
+- error: API down; partial data; one widget fails while others succeed
+- staleness: figures reflect the last completed batch run and must be labelled as such
+- multi-currency display and which currency totals are expressed in
+- zero, negative and very large values; awards missing optional attributes
+- what an administrator in support mode may and may not see
+
+KEY ENTITIES — business meaning only, no field names or types: grant, award type,
+vesting tranche, vested quantity, unvested quantity, exercisable quantity, strike price,
+current fair market value, expiration date.
+
+SUCCESS CRITERIA — measurable and technology-agnostic. Include time to first meaningful
+figure, correctness (every displayed figure traces to exactly one API field with no
+client-side recomputation), and comprehension (a participant can state their vested value
+and next vesting date without scrolling).
+
+Mark anything my description or the design does not settle as [NEEDS CLARIFICATION].
+Do not fill gaps with reasonable defaults.
+```
+
+**Produces:** branch `002-portfolio-overview`, `specs/002-portfolio-overview/spec.md`,
+`checklists/requirements.md`, and updates `.specify/feature.json` so later commands know
+which feature is active.
+
+**Review before moving on.** Reject the spec and re-run if you see: hex codes or px values,
+any framework name, any API path, or an Assumptions entry that silently answers a question
+you wanted asked.
+
+---
+
+## Phase 4 — `/speckit.clarify`
+
+```
+/speckit.clarify Prioritise: rounding and currency-conversion display rules; timezone
+and cut-off for the as-of timestamp; behaviour when the nightly batch has not completed
+or has failed; per-widget partial failure; the exact data differences between the
+participant view and the administrator support view; and any interaction implied by the
+Figma frames that is not navigation or filtering.
+```
+
+Answer every question. This is where stock-plan defects actually live — rounding and as-of
+semantics are invisible in a Figma frame and expensive in production. The answers are written
+back into `spec.md`.
+
+---
+
+## Phase 5 — `/speckit.plan` + the `design-context.md` file
+
+This is the step Spec Kit leaves open — there is no built-in `/design` command, and the
+maintainers' own discussion on where design guidance belongs is still unresolved. You close
+the gap by explicitly asking `/speckit.plan` to produce a design-context artifact.
+
+```
+/speckit.plan Angular 18, standalone components, signals for state, SCSS with CSS custom
+properties bound to design tokens.
+[substitute your real stack]
+
+DESIGN IMPLEMENTATION — produce specs/002-portfolio-overview/design-context.md:
+- Use the Figma MCP server. Required order: get_metadata for the node map, then
+  get_design_context for node 1204:5567 and each state variant, then get_screenshot for
+  visual reference. Re-fetch narrower nodes if a response truncates.
+- The MCP returns a React + Tailwind–shaped representation. That is design context, NOT
+  our code style. Translate it to our stack and conventions.
+- Follow design/design-system-rules.md for component and token mapping.
+- For every component on the screen record: Figma component name and node ID; the TOKEN
+  NAME (from design/tokens.json) for each colour, spacing, typography, radius and
+  elevation value; auto-layout direction and gap; responsive behaviour at our breakpoints;
+  and the mapping to an existing library component, or NEW if none exists.
+- Never emit a raw hex or px value. If a Figma value has no matching token, list it under
+  "## Token gaps" for the design team rather than hard-coding it.
+- Map each of the four required states to its Figma variant node.
+
+DATA ACCESS:
+- Consume contracts/openapi.yaml. Generate the typed client; no hand-written DTOs.
+- In data-model.md produce a table: UI element -> API response field -> formatting rule.
+  Every displayed figure maps 1:1 to one field. No derived or recomputed values.
+- Define caching, retry and staleness policy given data changes only once per batch cycle.
+```
+
+**Result — `specs/002-portfolio-overview/design-context.md` (excerpt):**
+
+```markdown
+# Design Context — Portfolio Overview
+Figma: "Portfolio Overview / Desktop" · node 1204:5567 · synced 2026-09-05
+
+## KPI Tile — "Total Portfolio Value"
+- Figma component: KPI Tile / Primary (node 88:120)
+- Maps to: `<wiq-kpi-tile>` (shared, from feature 001) — EXISTING
+- Container: bg `color.surface.raised`, radius `radius.md`,
+  padding `space.400`, border `color.border.subtle`
+- Label: type `typography.label.sm`, colour `color.text.secondary`
+- Value: type `typography.display.md`, colour `color.text.primary`, tabular numerals
+- Layout: auto-layout vertical, gap `space.100`
+- Breakpoints: 4-up ≥1440, 2-up 768–1439, 1-up <768
+
+### States
+| State | Figma node | Behaviour |
+|---|---|---|
+| Loading | 1204:5640 | Skeleton at tile dimensions, no layout shift |
+| Empty | 1204:5612 | Em-dash placeholder + "No awards on record" |
+| Error | 1204:5668 | Inline error inside the tile; siblings still render |
+| Stale | — | As-of chip in tile footer, `color.text.tertiary` |
+
+## Token gaps
+- Chart series colours 3–6 exist as raw fills in Figma with no bound variable.
+  Blocked on design team. Do not hard-code — feature ships with 2 series until resolved.
+```
+
+That file is the durable answer to "where do the designs live in SDD".
+
+---
+
+## Phase 6 — `/speckit.checklist` (visual conformance)
+
+```
+/speckit.checklist Generate a visual and behavioural conformance checklist for the
+Portfolio Overview screen. One checkable item per component covering: correct token used
+for every visual property, auto-layout spacing matches Figma, responsive behaviour at each
+breakpoint, all four data states implemented and matching their Figma variant node, no
+literal hex or px values present, and every figure labelled with unit, currency and as-of
+date. Reference node IDs from design-context.md so a reviewer can compare side by side.
+```
+
+Checklists act as unit tests for English — here you're pointing that mechanic at pixels.
+Output lands in `specs/002-portfolio-overview/checklists/visual.md` and becomes your PR
+review script.
+
+---
+
+## Phase 7 — `/speckit.tasks` + `/speckit.analyze`
+
+```
+/speckit.tasks
+```
+
+Derives tasks from plan, data-model, contracts and design-context; marks independent tasks
+`[P]`. For a display-only UI you should expect the task list to be near-perfectly
+parallelisable per widget — which it is, provided feature 001 already shipped the shared
+components.
+
+```
+/speckit.analyze
+```
+
+Cross-artifact consistency and coverage — run it **after** tasks and **before** implement.
+For this project, specifically confirm the report shows: every functional requirement has at
+least one task; every state variant node in design-context.md has an implementation task;
+no task requires client-side computation of a financial figure (constitution principle 2).
+
+---
+
+## Phase 8 — `/speckit.implement` + verify
+
+```
+/speckit.implement
+```
+
+Three rules that matter more than the command:
+
+1. **One screen per fresh context window.** Practitioners running Spec Kit at scale report
+   that a new context per implementation phase, with few actions per request, is what keeps
+   quality up and cost down — roughly $7–8 for the pre-implementation phases and $10–15 for
+   implementation on a new project, versus $35+ running unconstrained.
+2. **Verify against Figma before marking a task complete.** The MCP integration rules
+   themselves prescribe validating against Figma for 1:1 look and behaviour as the final step.
+3. **Then walk `checklists/visual.md` against the running UI**, screenshot beside screenshot
+   with `design/screens/*.png`.
+
+If a screen drifts, the fix is almost always in `constitution.md` or `design-context.md`, not
+in a nudge-prompt to the agent. Fix the artifact, regenerate the task.
+
+**Optional but useful:** `specify extension search verify` — a community `spec-kit-verify`
+extension checks implementation against specification. Community extensions are not reviewed
+or endorsed by the maintainers, so read the source before installing.
+
+---
+
+## Command cheat sheet
+
+```
+# ---- once per project ----
+specify init workplaceiq-ui --integration copilot
+# Phase 0, plain chat: get_metadata → get_variable_defs → create_design_system_rules
+#                      → get_screenshot → get_design_context
+#          producing design/figma-sources.md, tokens.json,
+#          design-system-rules.md, screens/*.png, screen-inventory.md
+/speckit.constitution   <principles above>
+
+# ---- once per feature, starting with 001-app-shell ----
+/speckit.specify        <what + why + Figma node references>
+/speckit.clarify        <push on rounding, as-of, partial failure, roles>
+/speckit.plan           <stack + design-context.md instructions + contract>
+/speckit.checklist      <visual conformance>
+/speckit.tasks
+/speckit.analyze
+/speckit.implement
+#   → verify against Figma → walk checklists/visual.md → PR
+```
+
+---
+
+## Figma MCP rules for the agent
+
+Put this block into `design/design-system-rules.md` so it is loaded on every design-driven
+step. It reflects the required flow the Figma MCP itself documents.
+
+```markdown
+## Figma MCP integration rules
+
+Required order — do not skip:
+1. `get_design_context` for the exact node(s).
+2. If the response truncates, `get_metadata` for the node map, then re-fetch narrower nodes.
+3. `get_screenshot` for the variant being implemented.
+4. Only with both context and screenshot in hand, download assets and begin.
+5. Translate the React + Tailwind–shaped output into this project's framework and
+   conventions. It is a representation of design and behaviour, not final code style.
+6. Replace utility classes with our tokens. Reuse existing components rather than
+   duplicating. Validate 1:1 against Figma before marking complete.
+
+Never:
+- Emit a literal hex, px, rem or font-size value. Use a token name from design/tokens.json.
+- Invent a component that already exists in the library.
+- Change layout "because it looks better". Raise a deviation in design-context.md instead.
+```
+
+If your design system is mature, set up **Code Connect**. Without it the MCP gives visual
+structure and tokens but no link between Figma components and your real codebase; with it,
+`get_code_connect_map` returns each component's actual import path and prop schema, so the
+agent generates against components you built rather than components it invented.
+
+---
+
+## Anti-patterns
+
+| Don't | Why |
+|---|---|
+| Paste hex codes and spacing into `/speckit.specify` | The spec template strips implementation detail; the values get lost or mutated. They belong in `design-context.md`. |
+| One spec for the whole application | One `/speckit.specify` = one branch = one folder. Giant specs produce giant unreviewable task lists. |
+| Skip feature 001 (shell + design system) | Every subsequent screen then invents its own near-duplicate components. This is the main source of visual drift. |
+| Rely on the live MCP session as your record | Sessions end. `design/` is the durable artifact; the MCP is how you populate it. |
+| Put Snowflake table names anywhere in this repo | They will leak into UI assumptions. Your contract is `openapi.yaml` and nothing behind it. |
+| Let the agent compute a financial figure client-side | Constitution principle 2. Two sources of truth for a number is a production incident waiting. |
+| Fix drift by re-prompting the agent | Fix `constitution.md` or `design-context.md` and regenerate. Prompt nudges don't persist. |
+| Float on `main` for the CLI | Command names and flags have changed repeatedly. Pin the release tag. |
+
+---
+
+## Known limitation, stated plainly
+
+Design fidelity through Spec Kit is not solved. A documented case in the Spec Kit discussions
+describes a user with Figma dev-mode MCP connected and all design details — colours,
+typography, spacing, radii — captured in `tasks.md`, whose implemented UI still did not match
+Figma. Fidelity leaks between task definition and code generation.
+
+The four mitigations in this runbook, in order of effect:
+
+1. **Token-only constitution rule.** If a component physically cannot contain a literal value,
+   the model cannot drift into approximations.
+2. **Feature 001 first**, so later screens compose rather than invent.
+3. **Code Connect**, binding Figma components to real import paths.
+4. **`checklists/visual.md` as a human gate** before merge.
+
+Expect roughly 90–95% fidelity out of the flow and a manual polish pass on spacing and hover
+states. That is a good outcome, and it is honest to plan for it rather than promise
+pixel-perfection.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Spec-Driven Development with GitHub Spec Kit
 ### A working playbook for WorkplaceIQ
 
